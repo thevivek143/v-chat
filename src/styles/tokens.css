@@ -1,0 +1,38 @@
+:root {
+  --primary: #6C3CE1;
+  --primary-light: #8B5CF6;
+  --primary-dark: #4C1D95;
+  --accent: #06B6D4;
+  --accent-light: #22D3EE;
+  --green: #10B981;
+  --red: #EF4444;
+  --amber: #F59E0B;
+  --pink: #EC4899;
+
+  /* Dark mode (default) */
+  --bg: #0F0F1A;
+  --bg2: #1A1A2E;
+  --bg3: #16213E;
+  --card: #1E1E35;
+  --card2: #252540;
+  --card3: #2A2A4A;
+  --text: #F0F0FF;
+  --text2: #A0A0C0;
+  --text3: #6060A0;
+  --border: rgba(108, 60, 225, 0.2);
+  --border2: rgba(108, 60, 225, 0.35);
+}
+
+.light {
+  --bg: #F0F0FF;
+  --bg2: #E8E8F8;
+  --bg3: #DDDDF0;
+  --card: #FFFFFF;
+  --card2: #F5F5FF;
+  --card3: #EEEEFF;
+  --text: #0F0F2E;
+  --text2: #4040A0;
+  --text3: #8080C0;
+  --border: rgba(108, 60, 225, 0.15);
+  --border2: rgba(108, 60, 225, 0.3);
+}
