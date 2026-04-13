@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Plus, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, Plus, ChevronRight, X, Bot, Sparkles } from 'lucide-react';
 
 const mockEvents = [
   { id: 1, date: 15, title: "Priya's Birthday", addedBy: "Mom", color: "var(--pink)" },
@@ -14,6 +14,17 @@ const mockEvents = [
 export default function FamilyCalendar() {
   const navigate = useNavigate();
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isNegotiating, setIsNegotiating] = useState(false);
+  const [negotiationResult, setNegotiationResult] = useState<string | null>(null);
+
+  const startAiNegotiation = () => {
+    setIsNegotiating(true);
+    setNegotiationResult(null);
+    setTimeout(() => {
+      setIsNegotiating(false);
+      setNegotiationResult("AI Twins have negotiated successfully: The 'Dinner Gathering' can overlap next Friday at 7 PM. All family schedules align.");
+    }, 3000);
+  };
 
   // Simple static days for visual
   const daysInMonth = Array.from({ length: 31 }, (_, i) => i + 1);
@@ -105,6 +116,36 @@ export default function FamilyCalendar() {
                 </div>
               </motion.div>
             ))}
+          </div>
+        </div>
+
+        {/* AI Negotiation Banner */}
+        <div className="px-4 py-4 mt-2">
+          <div className="bg-gradient-to-r from-primary-dark via-primary to-accent rounded-xl p-4 text-white shadow-[0_4px_16px_rgba(108,60,225,0.2)]">
+            <div className="flex items-center gap-2 mb-2">
+              <Bot size={20} />
+              <h3 className="font-bold text-[14px]">AI Twin Scheduler</h3>
+            </div>
+            <p className="text-[12px] opacity-90 mb-4">Let your AI agents negotiate the perfect time for the next family gathering without texting everyone.</p>
+            
+            {isNegotiating ? (
+              <div className="flex items-center justify-center p-3 bg-white/20 rounded-lg animate-pulse backdrop-blur-sm">
+                <Sparkles size={16} className="mr-2 animate-spin" />
+                <span className="text-[12px] font-bold">Agents are communicating...</span>
+              </div>
+            ) : negotiationResult ? (
+              <div className="p-3 bg-white/20 rounded-lg backdrop-blur-sm border-[0.5px] border-white/30">
+                <p className="text-[12px] font-bold">{negotiationResult}</p>
+                <button className="mt-2 w-full py-1.5 bg-white text-primary font-bold rounded-md text-[12px]">Schedule It</button>
+              </div>
+            ) : (
+              <button 
+                onClick={startAiNegotiation}
+                className="w-full py-2 bg-white/20 hover:bg-white/30 rounded-lg text-[13px] font-bold backdrop-blur-md transition cursor-pointer"
+              >
+                Start Auto-Negotiate
+              </button>
+            )}
           </div>
         </div>
       </div>

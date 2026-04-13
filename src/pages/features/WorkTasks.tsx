@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Plus, X } from 'lucide-react';
+import { ChevronLeft, Plus, X, Coins } from 'lucide-react';
 
 const mockTasks = [
   { id: 1, title: 'Fix login bug', assignee: 'VK', assigneeBg: '#6C3CE1', priority: '#EF4444', status: 'In Progress', statusColor: '#F59E0B', due: 'Today' },
   { id: 2, title: 'Design new dashboard', assignee: 'AK', assigneeBg: '#06B6D4', priority: '#F59E0B', status: 'To Do', statusColor: '#6B7280', due: 'Dec 15' },
   { id: 3, title: 'Write API docs', assignee: 'MR', assigneeBg: '#10B981', priority: '#10B981', status: 'Done', statusColor: '#10B981', due: 'Dec 10' },
-  { id: 4, title: 'Review PR #234', assignee: 'VK', assigneeBg: '#6C3CE1', priority: '#EF4444', status: 'Overdue', statusColor: '#EF4444', due: 'Today' },
+  { id: 4, title: 'Review PR #234', assignee: 'VK', assigneeBg: '#6C3CE1', priority: '#EF4444', status: 'Overdue', statusColor: '#EF4444', due: 'Today', penalty: 50 },
 ];
 
 export default function WorkTasks() {
@@ -27,14 +27,18 @@ export default function WorkTasks() {
           </motion.div>
           <span className="text-[18px] font-bold text-text">Tasks</span>
         </div>
-        <motion.div 
+        <div className="flex items-center gap-2">
+          <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 px-2 py-0.5 rounded-full flex items-center gap-1 text-[11px] font-bold">
+             <Coins size={12} /> ₹450
+          </div>
+          <motion.div 
           className="px-3 py-1.5 rounded-[20px] bg-[rgba(108,60,225,0.12)] flex items-center gap-1.5 cursor-pointer border-[0.5px] border-border2"
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsAddOpen(true)}
         >
           <Plus size={16} className="text-primary-light" />
-          <span className="text-[12px] font-semibold text-primary-light">Add Task</span>
         </motion.div>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
@@ -76,6 +80,12 @@ export default function WorkTasks() {
                 </div>
               </div>
               
+              {t.penalty && (
+                <div className="bg-red/10 border border-red/20 text-red text-[11px] font-bold px-2 py-1 rounded-md flex items-center w-max gap-1">
+                  <Coins size={12} /> Penalty: ₹{t.penalty} added to Team Fund!
+                </div>
+              )}
+
               <div className="flex items-center justify-between border-t border-border pt-2.5">
                 <span className="text-[12px] font-medium text-text3">Due: {t.due}</span>
                 <span 

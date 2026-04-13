@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, CornerUpLeft, Trash2, Sparkles, Send } from 'lucide-react';
+import { ChevronLeft, CornerUpLeft, Trash2, Sparkles, Send, ScanText } from 'lucide-react';
 
 export default function DrawCanvas() {
   const navigate = useNavigate();
@@ -13,6 +13,7 @@ export default function DrawCanvas() {
   
   const [desc, setDesc] = useState('');
   const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [arMode, setArMode] = useState(false);
 
   // Simulated canvas logic wrapper
   useEffect(() => {
@@ -82,16 +83,30 @@ export default function DrawCanvas() {
       initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
       className="absolute inset-0 bg-bg overflow-hidden flex flex-col z-50 pt-6"
     >
-      <div className="px-4 pb-3 flex items-center justify-between border-b-[0.5px] border-border shrink-0">
+      <div className="px-4 pb-3 flex items-center justify-between border-b-[0.5px] border-border shrink-0 z-20 bg-bg">
         <div className="flex items-center gap-3">
           <motion.div whileTap={{ scale: 0.9 }} onClick={() => navigate(-1)} className="cursor-pointer">
             <ChevronLeft size={24} className="text-text" />
           </motion.div>
           <span className="text-[18px] font-bold text-text">Draw for AI</span>
         </div>
+        
+        <motion.div 
+            whileTap={{ scale: 0.9 }} 
+            onClick={() => setArMode(!arMode)}
+            className={`w-[36px] h-[36px] flex items-center justify-center rounded-full cursor-pointer transition-colors ${arMode ? 'text-green-500 bg-green-500/10' : 'text-text3 bg-bg2'}`}
+            title="Toggle AR Mode"
+          >
+            <ScanText size={18} />
+          </motion.div>
       </div>
 
-      <div className="flex-1 relative bg-white dark:bg-[#1C1C1E]">
+      <div className={`flex-1 relative transition-colors ${arMode ? 'bg-[#000000]/60 backdrop-blur-[2px]' : 'bg-white dark:bg-[#1C1C1E]'}`}>
+         {arMode && (
+           <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+             <span className="text-[32px] font-bold text-white tracking-[1em]">CAMERA VIEW</span>
+           </div>
+         )}
          <canvas 
             ref={canvasRef}
             width={window.innerWidth}

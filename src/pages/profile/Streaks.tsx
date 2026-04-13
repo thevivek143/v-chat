@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Flame, Leaf, BookOpen, HeartHandshake } from 'lucide-react';
 import { mockStreaks } from '../../data/profile.data';
 
 export default function Streaks() {
@@ -13,20 +13,53 @@ export default function Streaks() {
       initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
       className="absolute inset-0 bg-bg overflow-y-auto flex flex-col z-50 pb-10"
     >
-      <div className="sticky top-0 z-20 px-4 pt-6 pb-4 bg-bg/90 backdrop-blur-md flex items-center gap-3 border-b-[0.5px] border-border">
-        <motion.div whileTap={{ scale: 0.9 }} onClick={() => navigate(-1)} className="cursor-pointer">
-          <ChevronLeft size={24} className="text-text" />
-        </motion.div>
-        <span className="text-[18px] font-bold text-text">Your Streaks</span>
+      <div className="sticky top-0 z-20 px-4 pt-6 pb-4 bg-bg/90 backdrop-blur-md flex items-center justify-between border-b-[0.5px] border-border">
+        <div className="flex items-center gap-3">
+          <motion.div whileTap={{ scale: 0.9 }} onClick={() => navigate(-1)} className="cursor-pointer">
+            <ChevronLeft size={24} className="text-text" />
+          </motion.div>
+          <span className="text-[18px] font-bold text-text">Life Streaks</span>
+        </div>
       </div>
 
       <div className="px-4 mt-6">
         
         {/* Highlight Summary Card */}
-        <div className="relative overflow-hidden rounded-[20px] p-6 text-white mb-8 shadow-md text-center" style={{ background: 'linear-gradient(135deg, #6C3CE1, #EC4899)' }}>
+        <div className="relative overflow-hidden rounded-[20px] p-6 text-white mb-6 shadow-md text-center" style={{ background: 'linear-gradient(135deg, #6C3CE1, #EC4899)' }}>
            <span className="text-[28px] mb-2 block drop-shadow-md">🔥</span>
            <h3 className="text-[20px] font-bold leading-tight mb-1">Total Active Streaks: 4</h3>
            <p className="text-[12px] font-medium text-white/90">Longest streak: 47 days with Rahul</p>
+        </div>
+
+        {/* Life Streaks Feature */}
+        <h4 className="text-[16px] font-bold text-text mb-4 mt-6">Super App Streaks</h4>
+        <div className="grid grid-cols-2 gap-3 mb-8">
+           <div className="bg-card p-4 rounded-2xl border border-border shadow-sm flex flex-col items-center text-center gap-2 cursor-pointer transition hover:bg-bg2">
+             <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-500">
+                <Leaf size={20} />
+             </div>
+             <span className="text-[13px] font-bold text-text">Eco Streak</span>
+             <span className="text-[11px] text-text3">5 Rideshare Carpools</span>
+             <span className="text-green-500 font-bold text-[14px]">🔥 5</span>
+           </div>
+           
+           <div className="bg-card p-4 rounded-2xl border border-border shadow-sm flex flex-col items-center text-center gap-2 cursor-pointer transition hover:bg-bg2">
+             <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500">
+                <BookOpen size={20} />
+             </div>
+             <span className="text-[13px] font-bold text-text">Brain Streak</span>
+             <span className="text-[11px] text-text3">3 Study Assignments</span>
+             <span className="text-blue-500 font-bold text-[14px]">🔥 3</span>
+           </div>
+           
+           <div className="bg-card p-4 rounded-2xl border border-border shadow-sm flex flex-col items-center text-center gap-2 cursor-pointer transition hover:bg-bg2">
+             <div className="w-10 h-10 rounded-full bg-pink-500/20 flex items-center justify-center text-pink-500">
+                <HeartHandshake size={20} />
+             </div>
+             <span className="text-[13px] font-bold text-text">Generosity</span>
+             <span className="text-[11px] text-text3">Sent ₹500 to Family</span>
+             <span className="text-pink-500 font-bold text-[14px]">🔥 12</span>
+           </div>
         </div>
 
         {/* All streaks */}

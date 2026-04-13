@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Radio, Link as LinkIcon, Zap } from 'lucide-react';
+import { ChevronLeft, Radio, Link as LinkIcon, Zap, Wifi } from 'lucide-react';
 import { mockConnections } from '../../data/profile.data';
 
 export default function VchatDrop() {
   const navigate = useNavigate();
+  const [inSpace, setInSpace] = useState(false);
 
   return (
     <motion.div 
@@ -20,6 +21,39 @@ export default function VchatDrop() {
       </div>
 
       <div className="px-4 mt-2 flex flex-col gap-6">
+
+        {/* Ephemeral Spaces Card - NEW FEATURE */}
+        <div className="relative overflow-hidden rounded-[24px] p-6 shadow-[0_4px_24px_rgba(255,59,48,0.2)] bg-gradient-to-tr from-[#FF3B30] to-[#FF9500] text-white cursor-pointer transition-transform hover:scale-[1.01]" onClick={() => setInSpace(!inSpace)}>
+           <div className="absolute top-0 right-0 p-4 opacity-20 transform translate-x-4 -translate-y-4">
+              <Wifi size={140} className="text-white" />
+           </div>
+           
+           <div className="relative z-10">
+              <div className="bg-white/20 backdrop-blur-md self-start w-max rounded-full p-2.5 mb-5 shadow-inner">
+                 <Radio size={24} className="text-white" />
+              </div>
+              <h2 className="text-[22px] font-bold mb-2">Ephemeral Spaces</h2>
+              <p className="text-[14px] text-white/90 mb-5 max-w-[200px]">Create an instant, geo-fenced mesh network right here for you and the people around you.</p>
+              
+              {inSpace ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-black/20 rounded-xl backdrop-blur-md flex flex-col gap-2">
+                       <span className="text-xs font-bold uppercase tracking-wider text-white/80">Space Active</span>
+                       <div className="flex gap-2 items-center">
+                          <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-[#FF3B30] font-bold text-[10px]">You</div>
+                          <div className="w-8 h-8 rounded-full border border-dashed border-white/50 flex items-center justify-center text-white/50 text-[10px]">+</div>
+                       </div>
+                       <span className="text-[11px] text-white/80">Room will dissolve when participants leave WiFi range.</span>
+                    </div>
+                    <button className="bg-white/10 text-white font-bold py-3 px-6 rounded-[12px] w-full mt-2" onClick={(e) => { e.stopPropagation(); setInSpace(false); }}>Disband Space</button>
+                  </div>
+              ) : (
+                  <button className="bg-white text-[#FF3B30] font-bold py-3 px-6 rounded-[12px] w-max shadow-sm" onClick={(e) => { e.stopPropagation(); setInSpace(true); }}>
+                   Create Nearby Space
+                  </button>
+              )}
+           </div>
+        </div>
 
         {/* Nearby Share Card */}
         <div className="relative overflow-hidden rounded-[24px] p-6 shadow-lg text-white" style={{ background: 'linear-gradient(135deg, #10B981, #047857)' }}>
