@@ -1,29 +1,40 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Share2, Heart, MessageCircle, Bookmark, MoreVertical, Music } from 'lucide-react';
-import { mockReels } from '../data/explore.data';
+import { useExploreStore } from '../store/explore.store';
 
 export default function ReelPlayer() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [isLiked, setIsLiked] = useState(false);
   const [showHeart, setShowHeart] = useState(false);
   
-  const currentIdx = mockReels.findIndex(r => r.id === id);
-  const reel = currentIdx >= 0 ? mockReels[currentIdx] : mockReels[0];
+  const reels = useExploreStore(s => s.reels);
+  const likedReels = useExploreStore(s => s.likedReels);
+  const savedPosts = useExploreStore(s => s.savedPosts);
+  const followedUsers = useExploreStore(s => s.followedUsers);
+  const toggleLikeReel = useExploreStore(s => s.toggleLikeReel);
+  const toggleSavePost = useExploreStore(s => s.toggleSavePost);
+  const toggleFollow = useExploreStore(s => s.toggleFollow);
+  
+  const currentIdx = reels.findIndex(r => r.id === id);
+  const reel = currentIdx >= 0 ? reels[currentIdx] : reels[0];
+  const currentReelId = reel?.id || '';
+  const isLiked = likedReels.includes(currentReelId);
+  const isSaved = savedPosts.includes(currentReelId);
+  const isFollowing = followedUsers.includes(reel?.username || '');
 
-  const handleDragEnd = (event: any, info: any) => {
+  const handleDragEnd = (_event: unknown, info: { offset: { y: number } }) => {
     const threshold = 80;
     if (info.offset.y < -threshold) {
       // Swiped UP -> Next reel
-      if (currentIdx < mockReels.length - 1) {
-        navigate(`/reel/${mockReels[currentIdx + 1].id}`, { replace: true });
+      if (currentIdx < reels.length - 1) {
+        navigate(`/reel/${reels[currentIdx + 1].id}`, { replace: true });
       }
     } else if (info.offset.y > threshold) {
       // Swiped DOWN -> Prev reel
       if (currentIdx > 0) {
-        navigate(`/reel/${mockReels[currentIdx - 1].id}`, { replace: true });
+        navigate(`/reel/${reels[currentIdx - 1].id}`, { replace: true });
       } else {
         navigate('/explore');
       }
@@ -31,7 +42,9 @@ export default function ReelPlayer() {
   };
 
   const handleDoubleClick = () => {
-    setIsLiked(true);
+    if (!isLiked) {
+      toggleLikeReel(currentReelId);
+    }
     setShowHeart(true);
     setTimeout(() => setShowHeart(false), 800);
   };
@@ -101,10 +114,10 @@ export default function ReelPlayer() {
           <motion.div 
             className="flex flex-col items-center gap-1.5 cursor-pointer"
             whileTap={{ scale: 0.8 }}
-            onClick={() => setIsLiked(!isLiked)}
+            onClick={() => toggleLikeReel(currentReelId)}
           >
             <Heart size={30} className={isLiked ? 'text-pink drop-shadow-md fill-pink' : 'text-white drop-shadow-md'} strokeWidth={2.5} />
-            <span className="text-[11px] font-bold drop-shadow-md">{isLiked ? parseInt(reel.likes)+1+'K' : reel.likes}</span>
+            <span className="text-[11px] font-bold drop-shadow-md">{reel.likes}</span>
           </motion.div>
 
           <motion.div className="flex flex-col items-center gap-1.5 cursor-pointer" whileTap={{ scale: 0.8 }}>
@@ -117,9 +130,13 @@ export default function ReelPlayer() {
             <span className="text-[11px] font-bold drop-shadow-md">Share</span>
           </motion.div>
 
-          <motion.div className="flex flex-col items-center gap-1.5 cursor-pointer" whileTap={{ scale: 0.8 }}>
-            <Bookmark size={30} className="text-white drop-shadow-md" strokeWidth={2.5} />
-            <span className="text-[11px] font-bold drop-shadow-md">Save</span>
+          <motion.div 
+            className="flex flex-col items-center gap-1.5 cursor-pointer" 
+            whileTap={{ scale: 0.8 }}
+            onClick={() => toggleSavePost(currentReelId)}
+          >
+            <Bookmark size={30} className={isSaved ? 'text-primary drop-shadow-md fill-primary' : 'text-white drop-shadow-md'} strokeWidth={2.5} />
+            <span className="text-[11px] font-bold drop-shadow-md">{isSaved ? 'Saved' : 'Save'}</span>
           </motion.div>
 
           <motion.div className="flex flex-col items-center gap-1.5 cursor-pointer" whileTap={{ scale: 0.8 }}>
@@ -134,8 +151,14 @@ export default function ReelPlayer() {
               <span className="text-[13px] font-bold text-white uppercase">{reel.username.substring(0,2)}</span>
             </div>
             <span className="text-[16px] font-bold tracking-wide">@{reel.username}</span>
-            <button className="px-3 py-1.5 border border-white rounded-[16px] text-[11px] font-bold ml-1 hover:bg-white hover:text-black transition-colors">
-              Follow
+            <button 
+              onClick={() => toggleFollow(reel.username)}
+              className={isFollowing 
+                ? "px-3 py-1.5 bg-white text-black rounded-[16px] text-[11px] font-bold ml-1 transition-colors"
+                : "px-3 py-1.5 border border-white rounded-[16px] text-[11px] font-bold ml-1 hover:bg-white hover:text-black transition-colors"
+              }
+            >
+              {isFollowing ? 'Following' : 'Follow'}
             </button>
           </div>
           

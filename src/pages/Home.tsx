@@ -1,14 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Bell, Sparkles, Plus } from 'lucide-react';
-import { aiInsightsData, newsItemsData, storiesData } from '../data/home.data';
+import { Bell, Sparkles, Plus, X } from 'lucide-react';
+import { useHomeStore } from '../store/home.store';
 
 // ============================================
 // TOP BAR
 // ============================================
 function TopBar() {
   const navigate = useNavigate();
+  const store = useHomeStore();
   return (
     <div 
       className="px-4 flex items-center justify-between shrink-0"
@@ -23,18 +24,23 @@ function TopBar() {
       }}
     >
       <div className="flex flex-col">
-        <span className="text-[12px] text-text3 font-medium leading-none">Good morning,</span>
-        <span className="text-[22px] font-bold text-text leading-tight mt-0.5">Vivek 👋</span>
+        <span className="text-[12px] text-text3 font-medium leading-none">{store.getGreeting().split(',')[0]},</span>
+        <span className="text-[22px] font-bold text-text leading-tight mt-0.5">{store.getGreeting().split(',').slice(1).join(',').trim()}</span>
       </div>
       <div className="flex items-center gap-4">
         <motion.div 
           className="relative cursor-pointer flex items-center justify-center w-8 h-8"
           whileTap={{ scale: 0.90 }}
           transition={{ duration: 0.15 }}
-          onClick={() => navigate('/notifications')}
+          onClick={() => {
+            store.clearNotifications();
+            navigate('/notifications');
+          }}
         >
           <Bell size={20} className="text-text2" />
-          <div className="absolute top-[3px] right-[4px] w-2 h-2 bg-red rounded-full border-[1.5px] border-bg"></div>
+          {store.unreadNotifications > 0 && (
+            <div className="absolute top-[3px] right-[4px] w-2 h-2 bg-red rounded-full border-[1.5px] border-bg"></div>
+          )}
         </motion.div>
         
         <motion.div 
@@ -57,6 +63,8 @@ function TopBar() {
 // ============================================
 function AITwinCard() {
   const navigate = useNavigate();
+  const store = useHomeStore();
+  const visibleInsights = store.getVisibleInsights();
   return (
     <motion.div
       initial={{ y: 20, opacity: 0 }}
@@ -78,7 +86,7 @@ function AITwinCard() {
           </div>
           <div className="flex flex-col">
             <span className="text-[15px] font-semibold text-text leading-tight">AI Twin</span>
-            <span className="text-[11px] text-text3">3 new insights</span>
+            <span className="text-[11px] text-text3">{visibleInsights.length} new insights</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 px-[10px] py-[4px] rounded-[20px]"
@@ -89,10 +97,10 @@ function AITwinCard() {
       </div>
 
       <div className="flex flex-col gap-2 mt-3">
-        {aiInsightsData.map(insight => (
+        {visibleInsights.map(insight => (
           <div 
             key={insight.id} 
-            className="flex items-center p-[10px] px-[12px] bg-card2 rounded-xl gap-2 cursor-pointer shadow-sm"
+            className="flex items-center p-[10px] px-[12px] bg-card2 rounded-xl gap-2 cursor-pointer shadow-sm relative group"
             onClick={(e) => { e.stopPropagation(); navigate(insight.actionRoute); }}
           >
             <div className="px-2 py-0.5 rounded flex items-center justify-center shrink-0"
@@ -103,6 +111,12 @@ function AITwinCard() {
               <span className="block truncate">{insight.text}</span>
             </div>
             <div className="text-[11px] font-semibold shrink-0" style={{ color: '#6C3CE1' }}>{insight.action}</div>
+            <button
+              className="absolute top-1 right-1 p-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => { e.stopPropagation(); store.dismissInsight(insight.id); }}
+            >
+              <X size={12} className="text-text3" />
+            </button>
           </div>
         ))}
       </div>
@@ -117,14 +131,15 @@ const STORY_TABS = ['Circle', 'Following', 'Groups', 'Nearby'];
 
 function StoriesSection() {
   const navigate = useNavigate();
+  const store = useHomeStore();
   return (
     <div className="mt-3 flex flex-col gap-3">
       <h2 className="text-[11px] font-semibold tracking-[0.08em] text-text3 uppercase px-4">Stories</h2>
       
       {/* Tabs */}
       <div className="flex items-center px-4 gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-        {STORY_TABS.map((tab, i) => {
-          const isActive = i === 0;
+        {STORY_TABS.map((tab) => {
+          const isActive = store.storyTab === tab;
           return (
             <div 
               key={tab} 
@@ -133,6 +148,7 @@ function StoriesSection() {
                   ? 'bg-primary text-white font-medium border border-transparent' 
                   : 'bg-transparent text-text2 border-[0.5px] border-border2'
               }`}
+              onClick={() => store.setStoryTab(tab)}
             >
               {tab}
             </div>
@@ -153,29 +169,35 @@ function StoriesSection() {
           <span className="text-[10px] text-text3 pt-0.5">Add</span>
         </motion.div>
 
-        {storiesData.map((story, i) => (
-          <motion.div 
-            key={story.id}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.2 + i * 0.05 }}
-            className="flex flex-col items-center gap-1 cursor-pointer shrink-0 relative"
-            whileTap={{ scale: 0.90 }}
-            onClick={() => navigate(`/story/${story.id}`)}
-          >
-            <div 
-              className="w-[60px] h-[60px] rounded-full p-[2.5px] flex items-center justify-center"
-              style={{ background: story.seen ? 'var(--border2)' : 'linear-gradient(135deg, #6C3CE1, #06B6D4)' }}
+        {store.stories.map((story, i) => {
+          const isSeen = store.seenStories.includes(story.id);
+          return (
+            <motion.div 
+              key={story.id}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 + i * 0.05 }}
+              className="flex flex-col items-center gap-1 cursor-pointer shrink-0 relative"
+              whileTap={{ scale: 0.90 }}
+              onClick={() => {
+                store.markStorySeen(story.id);
+                navigate(`/story/${story.id}`);
+              }}
             >
-              <div className="w-[100%] h-[100%] bg-bg2 rounded-full border-[2.5px] border-bg flex items-center justify-center overflow-hidden">
-                <span className="text-[22px]">{story.emoji}</span>
+              <div 
+                className="w-[60px] h-[60px] rounded-full p-[2.5px] flex items-center justify-center"
+                style={{ background: isSeen ? 'var(--border2)' : 'linear-gradient(135deg, #6C3CE1, #06B6D4)' }}
+              >
+                <div className="w-[100%] h-[100%] bg-bg2 rounded-full border-[2.5px] border-bg flex items-center justify-center overflow-hidden">
+                  <span className="text-[22px]">{story.emoji}</span>
+                </div>
               </div>
-            </div>
-            <span className="text-[10px] text-text2 max-w-[60px] w-full truncate block text-center pt-0.5">
-              {story.name}
-            </span>
-          </motion.div>
-        ))}
+              <span className="text-[10px] text-text2 max-w-[60px] w-full truncate block text-center pt-0.5">
+                {story.name}
+              </span>
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );
@@ -186,6 +208,7 @@ function StoriesSection() {
 // ============================================
 function NewsFeedSection() {
   const navigate = useNavigate();
+  const store = useHomeStore();
 
   const getPillColor = (colorCode: string) => {
     switch (colorCode) {
@@ -207,7 +230,7 @@ function NewsFeedSection() {
       </div>
 
       <div className="px-4 flex flex-col gap-2.5">
-        {newsItemsData.map((news, i) => {
+        {store.newsItems.map((news, i) => {
           const pillStyle = getPillColor(news.categoryColor);
           return (
             <motion.div

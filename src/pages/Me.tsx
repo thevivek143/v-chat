@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, Camera, ChevronRight, MessageSquare } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
-import { mockStreaks, mockConnections } from '../data/profile.data';
+import { useProfileStore } from '../store/profile.store';
 
 export default function Me() {
   const navigate = useNavigate();
   const { isDark, toggle: toggleTheme } = useTheme();
+  const store = useProfileStore();
 
   return (
     <div className="w-full flex-col flex bg-bg relative min-h-[100dvh]">
@@ -16,8 +17,8 @@ export default function Me() {
         {/* Profile Hero */}
         <div className="pt-6 px-4 flex flex-col items-center relative">
            <div className="relative mb-3 cursor-pointer" onClick={() => navigate('/me/edit')}>
-             <div className="w-[80px] h-[80px] rounded-full flex justify-center items-center shadow-lg" style={{ background: 'linear-gradient(135deg, #6C3CE1, #06B6D4)' }}>
-                <span className="text-[32px] font-bold text-white leading-none pb-1">V</span>
+             <div className="w-[80px] h-[80px] rounded-full flex justify-center items-center shadow-lg" style={{ background: store.profile.avatarGradient }}>
+                <span className="text-[32px] font-bold text-white leading-none pb-1">{store.profile.name.charAt(0)}</span>
              </div>
              <div className="absolute bottom-0 right-0 w-[24px] h-[24px] bg-[#10B981] rounded-full border-[3px] border-bg flex items-center justify-center">
                 <Check size={12} className="text-white" strokeWidth={3} />
@@ -29,15 +30,25 @@ export default function Me() {
              </div>
            </div>
 
-           <h2 className="text-[20px] font-bold text-text mb-0.5">Vivek Vardhan</h2>
-           <span className="text-[14px] font-semibold text-primary-light mb-1">@vivek_hyd</span>
-           <span className="text-[12px] font-medium text-text3">📍 Hyderabad, Telangana</span>
+           <h2 className="text-[20px] font-bold text-text mb-0.5">{store.profile.name}</h2>
+           <span className="text-[14px] font-semibold text-primary-light mb-1">{store.profile.username}</span>
+           <span className="text-[12px] font-medium text-text3">📍 {store.profile.location}</span>
 
            <div className="flex flex-wrap justify-center gap-2 mt-4">
-             <span className="bg-[rgba(108,60,225,0.1)] text-primary-light text-[11px] font-bold px-3 py-1 rounded-[12px] border border-[rgba(108,60,225,0.2)]">✓ Aadhaar Verified</span>
-             <span className="bg-[rgba(6,182,212,0.1)] text-[#06B6D4] text-[11px] font-bold px-3 py-1 rounded-[12px] border border-[rgba(6,182,212,0.2)]">⚡ Developer</span>
-             <span className="bg-[rgba(16,185,129,0.1)] text-[#10B981] text-[11px] font-bold px-3 py-1 rounded-[12px] border border-[rgba(16,185,129,0.2)]">🎬 Creator</span>
-             <span className="bg-[rgba(245,158,11,0.1)] text-[#F59E0B] text-[11px] font-bold px-3 py-1 rounded-[12px] border border-[rgba(245,158,11,0.2)]">🎓 Student</span>
+             {store.profile.badges.map((badge, idx) => {
+               const colors = [
+                 'bg-[rgba(108,60,225,0.1)] text-primary-light border-[rgba(108,60,225,0.2)]',
+                 'bg-[rgba(6,182,212,0.1)] text-[#06B6D4] border-[rgba(6,182,212,0.2)]',
+                 'bg-[rgba(16,185,129,0.1)] text-[#10B981] border-[rgba(16,185,129,0.2)]',
+                 'bg-[rgba(245,158,11,0.1)] text-[#F59E0B] border-[rgba(245,158,11,0.2)]'
+               ];
+               const icons = ['✓', '⚡', '🎬', '🎓'];
+               return (
+                 <span key={idx} className={`${colors[idx % colors.length]} text-[11px] font-bold px-3 py-1 rounded-[12px] border`}>
+                   {icons[idx % icons.length]} {badge}
+                 </span>
+               );
+             })}
            </div>
 
            <button onClick={() => navigate('/me/edit')} className="mt-5 border-[1.5px] border-border2 text-primary-light font-bold text-[13px] px-6 py-2 rounded-[20px]">
@@ -48,19 +59,19 @@ export default function Me() {
         {/* Stats Bar */}
         <div className="mx-4 mt-6 bg-card2 border-[0.5px] border-border rounded-[16px] p-4 grid grid-cols-4 shadow-sm text-center">
             <div className="flex flex-col cursor-pointer" onClick={() => {}}>
-              <span className="text-[18px] font-bold text-text">248</span>
+              <span className="text-[18px] font-bold text-text">{store.stats.friends}</span>
               <span className="text-[11px] font-medium text-text3">Friends</span>
             </div>
             <div className="flex flex-col cursor-pointer border-l-[0.5px] border-border" onClick={() => {}}>
-              <span className="text-[18px] font-bold text-text">1.2K</span>
+              <span className="text-[18px] font-bold text-text">{store.stats.followers >= 1000 ? `${(store.stats.followers / 1000).toFixed(1)}K` : store.stats.followers}</span>
               <span className="text-[11px] font-medium text-text3">Followers</span>
             </div>
             <div className="flex flex-col cursor-pointer border-l-[0.5px] border-border" onClick={() => {}}>
-              <span className="text-[18px] font-bold text-text">86</span>
+              <span className="text-[18px] font-bold text-text">{store.stats.following}</span>
               <span className="text-[11px] font-medium text-text3">Following</span>
             </div>
             <div className="flex flex-col cursor-pointer border-l-[0.5px] border-border" onClick={() => {}}>
-              <span className="text-[18px] font-bold text-text">34</span>
+              <span className="text-[18px] font-bold text-text">{store.stats.posts}</span>
               <span className="text-[11px] font-medium text-text3">Posts</span>
             </div>
         </div>
@@ -73,7 +84,7 @@ export default function Me() {
           </div>
           
           <div className="flex flex-col gap-2">
-             {mockStreaks.slice(0,3).map(streak => (
+             {store.streaks.slice(0,3).map(streak => (
                 <div key={streak.id} className="bg-card border-[0.5px] border-border rounded-[14px] p-3 flex justify-between items-center shadow-sm">
                    <div className="flex items-center gap-3">
                      <span className="text-[28px]">{streak.emoji}</span>
@@ -105,7 +116,7 @@ export default function Me() {
           </div>
 
           <div className="bg-card border-[0.5px] border-border rounded-[20px] p-4 flex flex-col shadow-sm">
-             {mockConnections.map((c, i) => (
+             {store.connections.map((c, i) => (
                 <div key={c.id} className={`py-4 flex items-center justify-between ${i === 0 ? 'border-b-[0.5px] border-border' : ''}`}>
                    <div className="flex items-center gap-3">
                      <div className="w-[44px] h-[44px] rounded-full flex items-center justify-center shrink-0" style={{ background: c.grad }}>

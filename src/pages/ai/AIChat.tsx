@@ -1,28 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Settings, Sparkles, Image as ImageIcon, Mic, Send, Palette } from 'lucide-react';
-import { mockAIChatSequence } from '../../data/ai.data';
+import { useAIStore } from '../../store/ai.store';
 
 export default function AIChat() {
   const navigate = useNavigate();
-  const [messages, setMessages] = useState(mockAIChatSequence);
+  const { messages, isTyping, sendMessage } = useAIStore();
   const [inputText, setInputText] = useState('');
   const [isRecording, setIsRecording] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
 
   const handleSend = () => {
     if (!inputText.trim()) return;
-    setMessages([...messages, { id: Date.now().toString(), sender: 'user', text: inputText }]);
+    sendMessage(inputText);
     setInputText('');
-    
-    // Simulate AI response
-    setTimeout(() => {
-       setMessages(prev => [...prev, { 
-         id: (Date.now()+1).toString(), 
-         sender: 'ai', 
-         text: "I'm processing your request. Since I'm in offline mode, I'm checking your local files and memories..." 
-       }]);
-    }, 1000);
   };
 
   return (
@@ -36,23 +36,41 @@ export default function AIChat() {
                  <Sparkles size={16} className="text-white" />
               </div>
             )}
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              className={`max-w-[75%] px-4 py-2.5 ${msg.sender === 'user' 
-                ? 'bg-primary text-white rounded-[18px_18px_4px_18px]' 
+              className={`max-w-[75%] px-4 py-2.5 ${msg.sender === 'user'
+                ? 'bg-primary text-white rounded-[18px_18px_4px_18px]'
                 : 'bg-card2 border-[0.5px] border-border text-text rounded-[18px_18px_18px_4px]'}`}
             >
               <p className="text-[14px] leading-[1.4] whitespace-pre-wrap">{msg.text}</p>
             </motion.div>
           </div>
         ))}
+
+        {isTyping && (
+          <div className="flex w-full justify-start">
+            <div className="w-[32px] h-[32px] rounded-full flex items-center justify-center shrink-0 mr-2 mt-auto" style={{ background: 'linear-gradient(135deg, #6C3CE1, #06B6D4)' }}>
+               <Sparkles size={16} className="text-white" />
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-card2 border-[0.5px] border-border text-text rounded-[18px_18px_18px_4px] px-4 py-3 flex items-center gap-1"
+            >
+              <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} className="w-1.5 h-1.5 bg-text3 rounded-full" />
+              <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-1.5 h-1.5 bg-text3 rounded-full" />
+              <motion.span animate={{ opacity: [0.4, 1, 0.4] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-1.5 h-1.5 bg-text3 rounded-full" />
+            </motion.div>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
       </div>
 
       <div className="absolute bottom-0 w-full bg-bg/90 backdrop-blur-md px-4 pb-6 pt-2 border-t-[0.5px] border-border z-20">
         
         {/* Suggestion Pills */}
-        {messages.length === mockAIChatSequence.length && !inputText && (
+        {messages.length <= 5 && !inputText && (
           <div className="flex gap-2 overflow-x-auto pb-3 -mt-2" style={{ scrollbarWidth: 'none' }}>
              {['📋 Daily briefing', '💰 Spending summary', '🔍 Find a file', '📅 What\'s today'].map((pill, i) => (
                 <span key={i} onClick={() => setInputText(pill)} className="bg-card border-[0.5px] border-border rounded-full px-3 py-1.5 text-[11px] font-bold text-text shrink-0 cursor-pointer shadow-sm">

@@ -3,11 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Search, Delete, ArrowRight } from 'lucide-react';
 import { mockContacts } from '../../data/hub.data';
+import { useHubStore } from '../../store/hub.store';
+import { useToastStore } from '../../store/toast.store';
 
 export default function PaySend() {
   const navigate = useNavigate();
+  const store = useHubStore();
+  const toast = useToastStore();
   const [activeTab, setActiveTab] = useState('To Contact');
-  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [selectedContact, setSelectedContact] = useState<{ initials: string; name: string; grad: string } | null>(null);
   const [amount, setAmount] = useState('');
 
   const handleNum = (num: string) => {
@@ -66,11 +70,26 @@ export default function PaySend() {
         </div>
 
         <div className="px-6">
-          <button 
-            className={`w-full py-4 rounded-[16px] font-bold flex items-center justify-center gap-2 text-[16px] transition-all ${amount.length > 0 ? 'bg-primary text-white' : 'bg-card border-[0.5px] border-border text-text3 cursor-not-allowed'}`}
+          <motion.button 
+            whileTap={amount.length > 0 ? { scale: 0.98 } : {}}
+            onClick={() => {
+              const numAmount = parseFloat(amount);
+              if (numAmount > 0 && numAmount <= store.balance && selectedContact) {
+                store.sendMoney(selectedContact.name, numAmount);
+                toast.addToast('Money sent successfully!', 'success');
+                setTimeout(() => {
+                  navigate(-1);
+                }, 800);
+              }
+            }}
+            disabled={amount.length === 0 || parseFloat(amount) <= 0 || parseFloat(amount) > store.balance}
+            className={`w-full py-4 rounded-[16px] font-bold flex items-center justify-center gap-2 text-[16px] transition-all ${amount.length > 0 && parseFloat(amount) <= store.balance ? 'bg-primary text-white' : 'bg-card border-[0.5px] border-border text-text3 cursor-not-allowed'}`}
           >
             Send {amount.length > 0 ? `₹${amount}` : ''} <ArrowRight size={18} />
-          </button>
+          </motion.button>
+          {parseFloat(amount) > store.balance && (
+            <p className="text-center text-[12px] text-red-500 mt-2">Insufficient balance</p>
+          )}
         </div>
       </motion.div>
     );

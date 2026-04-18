@@ -1,11 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, ArrowUpRight, ArrowDownLeft, Globe, Receipt, ScanLine, Smartphone } from 'lucide-react';
-import { mockTransactions } from '../../data/hub.data';
+import { ChevronLeft, ArrowUpRight, ArrowDownLeft, Receipt, ScanLine, Smartphone } from 'lucide-react';
+import { useHubStore } from '../../store/hub.store';
 
 export default function VchatPay() {
   const navigate = useNavigate();
+  const store = useHubStore();
 
   return (
     <motion.div 
@@ -30,7 +31,7 @@ export default function VchatPay() {
           
           <div className="relative z-10 flex flex-col items-center">
             <span className="text-[13px] text-white/70 font-semibold tracking-wide">Available Balance</span>
-            <div className="text-[40px] font-bold text-white tracking-tight mt-1 mb-2">₹24,850.00</div>
+            <div className="text-[40px] font-bold text-white tracking-tight mt-1 mb-2">₹{store.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <div className="bg-white/10 border border-white/20 rounded-full px-4 py-1.5 backdrop-blur-sm">
               <span className="text-[12px] text-white font-medium">UPI: vivek@vchat</span>
             </div>
@@ -93,7 +94,7 @@ export default function VchatPay() {
         <div>
           <h3 className="text-[16px] font-bold text-text mb-4">Recent Transactions</h3>
           <div className="flex flex-col gap-0">
-            {mockTransactions.map((tx, idx) => (
+            {store.transactions.map((tx) => (
               <div key={tx.id} className="flex justify-between items-center py-4 border-b-[0.5px] border-border">
                 <div className="flex items-center gap-3">
                   <div className="w-[44px] h-[44px] rounded-full bg-card2 border border-border2 flex items-center justify-center text-[20px]">

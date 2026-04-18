@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, ArrowUpRight, ArrowDownLeft, Globe, Clock, ChevronRight } from 'lucide-react';
+import { useHubStore } from '../store/hub.store';
 
 export default function Hub() {
   const navigate = useNavigate();
+  const store = useHubStore();
   const [showStatePicker, setShowStatePicker] = useState(false);
 
   return (
@@ -21,6 +23,8 @@ export default function Hub() {
           <input 
             type="text" 
             placeholder="Search services..." 
+            value={store.searchQuery}
+            onChange={(e) => store.setSearchQuery(e.target.value)}
             className="bg-transparent border-none outline-none text-text text-[14px] w-full placeholder:text-text3"
           />
         </div>
@@ -41,7 +45,7 @@ export default function Hub() {
           
           <div className="relative z-10">
             <span className="text-[12px] text-white/60 font-semibold tracking-wide">Total Balance</span>
-            <div className="text-[32px] font-bold text-white tracking-tight mt-1 mb-1">₹24,850.00</div>
+            <div className="text-[32px] font-bold text-white tracking-tight mt-1 mb-1">₹{store.balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <span className="text-[11px] text-white/50 font-bold tracking-widest uppercase">Vchat Pay</span>
 
             {/* Action Buttons */}
@@ -82,7 +86,7 @@ export default function Hub() {
               onClick={() => setShowStatePicker(true)}
               className="bg-[rgba(245,158,11,0.12)] border-[0.5px] border-[rgba(245,158,11,0.3)] px-3 py-1.5 rounded-full flex items-center gap-1 cursor-pointer"
             >
-              <span className="text-[11px] font-bold text-amber-500">📍 Telangana ▾</span>
+              <span className="text-[11px] font-bold text-amber-500">📍 {store.selectedState} ▾</span>
             </div>
           </div>
 
@@ -275,9 +279,12 @@ export default function Hub() {
                     <div 
                       key={state}
                       className="py-3 border-b-[0.5px] border-border flex justify-between items-center cursor-pointer"
-                      onClick={() => setShowStatePicker(false)}
+                      onClick={() => {
+                        store.setSelectedState(state);
+                        setShowStatePicker(false);
+                      }}
                     >
-                      <span className={`text-[15px] font-medium ${state === 'Telangana' ? 'text-primary' : 'text-text'}`}>{state}</span>
+                      <span className={`text-[15px] font-medium ${state === store.selectedState ? 'text-primary' : 'text-text'}`}>{state}</span>
                     </div>
                   ))}
                 </div>

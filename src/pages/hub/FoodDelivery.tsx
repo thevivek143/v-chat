@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Search, Star, Clock } from 'lucide-react';
-import { mockRestaurants } from '../../data/hub.data';
+import { ChevronLeft, Search, Star, Clock, Heart } from 'lucide-react';
+import { useHubStore } from '../../store/hub.store';
+import { useToastStore } from '../../store/toast.store';
 
 export default function FoodDelivery() {
   const navigate = useNavigate();
+  const store = useHubStore();
+  const toast = useToastStore();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   return (
     <motion.div 
@@ -29,6 +33,8 @@ export default function FoodDelivery() {
           <input 
             type="text" 
             placeholder="Search restaurants or dishes" 
+            value={store.searchQuery}
+            onChange={(e) => store.setSearchQuery(e.target.value)}
             className="bg-transparent border-none outline-none text-text text-[14px] w-full"
           />
         </div>
@@ -37,11 +43,20 @@ export default function FoodDelivery() {
       <div className="px-4 mt-4">
         {/* Categories */}
         <div className="flex gap-2 overflow-x-auto pb-4" style={{ scrollbarWidth: 'none' }}>
-           {['🍕 Pizza', '🍛 Biryani', '🍔 Burger', '🌮 Rolls', '🥗 Healthy', '🍰 Desserts'].map((cat, i) => (
-             <div key={i} className="bg-card border-[0.5px] border-border rounded-full px-4 py-2 shrink-0 md wmax flex items-center whitespace-nowrap shadow-sm">
-               <span className="text-[13px] font-bold text-text">{cat}</span>
-             </div>
-           ))}
+           {['🍕 Pizza', '🍛 Biryani', '🍔 Burger', '🌮 Rolls', '🥗 Healthy', '🍰 Desserts'].map((cat, i) => {
+             const categoryName = cat.split(' ')[1];
+             const isSelected = selectedCategory === categoryName;
+             return (
+               <motion.div 
+                 key={i} 
+                 whileTap={{ scale: 0.95 }}
+                 onClick={() => setSelectedCategory(isSelected ? null : categoryName)}
+                 className={`border-[0.5px] rounded-full px-4 py-2 shrink-0 flex items-center whitespace-nowrap shadow-sm cursor-pointer ${isSelected ? 'bg-primary border-primary text-white' : 'bg-card border-border'}`}
+               >
+                 <span className={`text-[13px] font-bold ${isSelected ? 'text-white' : 'text-text'}`}>{cat}</span>
+               </motion.div>
+             );
+           })}
         </div>
 
         {/* Offer Banner */}
@@ -57,8 +72,27 @@ export default function FoodDelivery() {
         {/* Restaurants List */}
         <h3 className="text-[16px] font-bold text-text mb-4">Restaurants near you</h3>
         <div className="flex flex-col gap-4">
-          {mockRestaurants.map((res) => (
-            <div key={res.id} className="bg-card border-[0.5px] border-border rounded-[20px] p-3 flex gap-4 shadow-sm cursor-pointer">
+          {store.getFilteredRestaurants()
+            .filter(res => selectedCategory ? res.tags.toLowerCase().includes(selectedCategory.toLowerCase()) : true)
+            .map((res) => (
+            <motion.div 
+              key={res.id} 
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                toast.addToast('Added to favorites!', 'success');
+              }}
+              className="bg-card border-[0.5px] border-border rounded-[20px] p-3 flex gap-4 shadow-sm cursor-pointer relative"
+            >
+              <motion.div 
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toast.addToast('Added to favorites!', 'success');
+                }}
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-bg/80 flex items-center justify-center z-10"
+              >
+                <Heart size={16} className="text-text3" />
+              </motion.div>
                <div className="w-[90px] h-[90px] rounded-[16px] flex items-center justify-center shrink-0 relative overflow-hidden" style={{ background: res.grad }}>
                  <span className="text-[40px] drop-shadow-md relative z-10">{res.emoji}</span>
                  {res.badge && (
@@ -67,7 +101,7 @@ export default function FoodDelivery() {
                    </div>
                  )}
                </div>
-               <div className="flex flex-col py-1 justify-between flex-1">
+               <div className="flex flex-col py-1 justify-between flex-1 pr-8">
                  <div>
                    <h4 className="text-[15px] font-bold text-text leading-tight mb-0.5">{res.name}</h4>
                    <span className="text-[12px] font-medium text-text3">{res.tags}</span>
@@ -83,7 +117,7 @@ export default function FoodDelivery() {
                    <span className="text-[11px] font-medium text-text2">• {res.fee}</span>
                  </div>
                </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

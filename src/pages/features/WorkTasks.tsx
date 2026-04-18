@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Plus, X, Coins } from 'lucide-react';
-
-const mockTasks = [
-  { id: 1, title: 'Fix login bug', assignee: 'VK', assigneeBg: '#6C3CE1', priority: '#EF4444', status: 'In Progress', statusColor: '#F59E0B', due: 'Today' },
-  { id: 2, title: 'Design new dashboard', assignee: 'AK', assigneeBg: '#06B6D4', priority: '#F59E0B', status: 'To Do', statusColor: '#6B7280', due: 'Dec 15' },
-  { id: 3, title: 'Write API docs', assignee: 'MR', assigneeBg: '#10B981', priority: '#10B981', status: 'Done', statusColor: '#10B981', due: 'Dec 10' },
-  { id: 4, title: 'Review PR #234', assignee: 'VK', assigneeBg: '#6C3CE1', priority: '#EF4444', status: 'Overdue', statusColor: '#EF4444', due: 'Today', penalty: 50 },
-];
+import { ChevronLeft, Plus, X, Coins, CheckCircle2, Circle } from 'lucide-react';
+import { useFeaturesStore } from '../../store/features.store';
+import { useToastStore } from '../../store/toast.store';
 
 export default function WorkTasks() {
   const navigate = useNavigate();
+  const { workTasks, taskFilter, setTaskFilter, addTask, toggleTaskComplete } = useFeaturesStore();
+  const { addToast } = useToastStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('All');
 
-  const tabs = ['All', 'My Tasks', 'Assigned', 'Done'];
+  const tabs = ['All', 'Pending', 'In Progress', 'Completed'];
+  
+  // Form state
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskAssignee, setTaskAssignee] = useState('VK');
+  const [taskDeadline, setTaskDeadline] = useState('');
+  const [taskPriority, setTaskPriority] = useState<'high' | 'medium' | 'low'>('medium');
 
   return (
     <div className="w-full flex-col flex bg-bg relative min-h-[100dvh]">
@@ -46,11 +48,11 @@ export default function WorkTasks() {
         {/* Filters */}
         <div className="flex px-4 gap-2 overflow-x-auto py-4 shrink-0" style={{ scrollbarWidth: 'none' }}>
           {tabs.map((tab) => {
-            const isActive = tab === activeTab;
+            const isActive = tab === taskFilter;
             return (
               <div 
                 key={tab} 
-                onClick={() => setActiveTab(tab)}
+                onClick={() => setTaskFilter(tab)}
                 className={`whitespace-nowrap px-4 py-1.5 rounded-[20px] text-[12px] shrink-0 cursor-pointer transition-colors ${
                   isActive ? 'bg-primary text-white font-medium' : 'bg-transparent text-text2 border-[0.5px] border-border2'
                 }`}
@@ -63,40 +65,72 @@ export default function WorkTasks() {
 
         {/* Tasks List */}
         <div className="px-4 pb-20 flex flex-col gap-2.5">
-          {mockTasks.map((t) => (
-            <motion.div 
-              key={t.id}
-              whileTap={{ scale: 0.98 }}
-              className="bg-card cursor-pointer rounded-[12px] p-[14px] flex flex-col gap-3 shadow-sm"
-              style={{ borderLeft: `4px solid ${t.priority}` }}
-            >
-              <div className="flex justify-between items-start">
-                <h3 className="text-[14px] font-bold text-text mb-1 leading-snug">{t.title}</h3>
-                <div 
-                  className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0"
-                  style={{ background: t.assigneeBg }}
-                >
-                  <span className="text-[9px] font-bold text-white">{t.assignee}</span>
-                </div>
-              </div>
+          {workTasks
+            .filter((t) => {
+              if (taskFilter === 'All') return true;
+              if (taskFilter === 'Pending') return t.status === 'pending';
+              if (taskFilter === 'In Progress') return t.status === 'in-progress';
+              if (taskFilter === 'Completed') return t.status === 'completed';
+              return true;
+            })
+            .map((t) => {
+              const priorityColor = t.priority === 'high' ? '#EF4444' : t.priority === 'medium' ? '#F59E0B' : '#10B981';
+              const statusColor = t.status === 'completed' ? '#10B981' : t.status === 'in-progress' ? '#F59E0B' : t.status === 'overdue' ? '#EF4444' : '#6B7280';
+              const statusLabel = t.status === 'pending' ? 'Pending' : t.status === 'in-progress' ? 'In Progress' : t.status === 'completed' ? 'Completed' : 'Overdue';
+              const assigneeBg = t.assignee === 'VK' ? '#6C3CE1' : t.assignee === 'AK' ? '#06B6D4' : '#10B981';
               
-              {t.penalty && (
-                <div className="bg-red/10 border border-red/20 text-red text-[11px] font-bold px-2 py-1 rounded-md flex items-center w-max gap-1">
-                  <Coins size={12} /> Penalty: ₹{t.penalty} added to Team Fund!
-                </div>
-              )}
-
-              <div className="flex items-center justify-between border-t border-border pt-2.5">
-                <span className="text-[12px] font-medium text-text3">Due: {t.due}</span>
-                <span 
-                  className="text-[10px] font-bold px-2 py-1 rounded-[8px]"
-                  style={{ background: `${t.statusColor}20`, color: t.statusColor }}
+              return (
+                <motion.div 
+                  key={t.id}
+                  whileTap={{ scale: 0.98 }}
+                  className="bg-card cursor-pointer rounded-[12px] p-[14px] flex flex-col gap-3 shadow-sm"
+                  style={{ borderLeft: `4px solid ${priorityColor}` }}
                 >
-                  {t.status}
-                </span>
-              </div>
-            </motion.div>
-          ))}
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          toggleTaskComplete(t.id);
+                          addToast(t.status === 'completed' ? 'Task marked as pending' : 'Task completed!', 'success');
+                        }}
+                        className="text-text3 hover:text-primary transition-colors"
+                      >
+                        {t.status === 'completed' ? (
+                          <CheckCircle2 size={20} className="text-green" />
+                        ) : (
+                          <Circle size={20} />
+                        )}
+                      </button>
+                      <h3 className={`text-[14px] font-bold mb-1 leading-snug ${t.status === 'completed' ? 'text-text3 line-through' : 'text-text'}`}>
+                        {t.title}
+                      </h3>
+                    </div>
+                    <div 
+                      className="w-[24px] h-[24px] rounded-full flex items-center justify-center shrink-0"
+                      style={{ background: assigneeBg }}
+                    >
+                      <span className="text-[9px] font-bold text-white">{t.assignee}</span>
+                    </div>
+                  </div>
+                  
+                  {t.penalty && (
+                    <div className="bg-red/10 border border-red/20 text-red text-[11px] font-bold px-2 py-1 rounded-md flex items-center w-max gap-1">
+                      <Coins size={12} /> Penalty: ₹{t.penalty} added to Team Fund!
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between border-t border-border pt-2.5">
+                    <span className="text-[12px] font-medium text-text3">Due: {t.deadline}</span>
+                    <span 
+                      className="text-[10px] font-bold px-2 py-1 rounded-[8px]"
+                      style={{ background: `${statusColor}20`, color: statusColor }}
+                    >
+                      {statusLabel}
+                    </span>
+                  </div>
+                </motion.div>
+              );
+            })}
         </div>
       </div>
 
@@ -121,14 +155,24 @@ export default function WorkTasks() {
               </div>
               
               <div className="flex flex-col gap-4">
-                <input type="text" placeholder="Task Title" className="w-full bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none focus:border-primary transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="Task Title" 
+                  value={taskTitle}
+                  onChange={(e) => setTaskTitle(e.target.value)}
+                  className="w-full bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none focus:border-primary transition-colors" 
+                />
                 
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-semibold text-text w-[80px]">Assign to:</span>
                   <div className="flex gap-2">
-                     {['VK', 'AK', 'MR'].map((init, i) => (
-                       <div key={i} className={`w-[32px] h-[32px] rounded-full flex items-center justify-center cursor-pointer ${i===0 ? 'ring-2 ring-primary bg-[#6C3CE1]' : 'bg-card2 border border-border2 text-text3'}`}>
-                         <span className={`text-[11px] font-bold ${i===0 ? 'text-white' : ''}`}>{init}</span>
+                     {['VK', 'AK', 'MR'].map((init) => (
+                       <div 
+                         key={init} 
+                         onClick={() => setTaskAssignee(init)}
+                         className={`w-[32px] h-[32px] rounded-full flex items-center justify-center cursor-pointer ${taskAssignee === init ? 'ring-2 ring-primary bg-[#6C3CE1]' : 'bg-card2 border border-border2 text-text3'}`}
+                       >
+                         <span className={`text-[11px] font-bold ${taskAssignee === init ? 'text-white' : ''}`}>{init}</span>
                        </div>
                      ))}
                   </div>
@@ -137,18 +181,56 @@ export default function WorkTasks() {
                 <div className="flex items-center gap-2">
                   <span className="text-[13px] font-semibold text-text w-[80px]">Priority:</span>
                   <div className="flex gap-2">
-                    <span className="px-3 py-1.5 rounded-[12px] bg-[rgba(239,68,68,0.15)] text-red font-bold text-[11px] cursor-pointer ring-1 ring-red/50">High</span>
-                    <span className="px-3 py-1.5 rounded-[12px] bg-card2 text-text3 font-bold text-[11px] cursor-pointer">Med</span>
-                    <span className="px-3 py-1.5 rounded-[12px] bg-card2 text-text3 font-bold text-[11px] cursor-pointer">Low</span>
+                    <span 
+                      onClick={() => setTaskPriority('high')}
+                      className={`px-3 py-1.5 rounded-[12px] text-[11px] font-bold cursor-pointer ${taskPriority === 'high' ? 'bg-[rgba(239,68,68,0.15)] text-red ring-1 ring-red/50' : 'bg-card2 text-text3'}`}
+                    >
+                      High
+                    </span>
+                    <span 
+                      onClick={() => setTaskPriority('medium')}
+                      className={`px-3 py-1.5 rounded-[12px] text-[11px] font-bold cursor-pointer ${taskPriority === 'medium' ? 'bg-[rgba(245,158,11,0.15)] text-amber ring-1 ring-amber/50' : 'bg-card2 text-text3'}`}
+                    >
+                      Med
+                    </span>
+                    <span 
+                      onClick={() => setTaskPriority('low')}
+                      className={`px-3 py-1.5 rounded-[12px] text-[11px] font-bold cursor-pointer ${taskPriority === 'low' ? 'bg-[rgba(16,185,129,0.15)] text-green ring-1 ring-green/50' : 'bg-card2 text-text3'}`}
+                    >
+                      Low
+                    </span>
                   </div>
                 </div>
 
-                <input type="date" className="w-full bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none mt-1" />
+                <input 
+                  type="date" 
+                  value={taskDeadline}
+                  onChange={(e) => setTaskDeadline(e.target.value)}
+                  className="w-full bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none mt-1" 
+                />
 
                 <motion.button 
                   className="w-full bg-primary text-white font-bold py-3.5 rounded-xl mt-2 text-[15px] shadow-md"
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsAddOpen(false)}
+                  onClick={() => {
+                    if (!taskTitle || !taskDeadline) {
+                      addToast('Please fill in all fields', 'warning');
+                      return;
+                    }
+                    addTask({
+                      title: taskTitle,
+                      assignee: taskAssignee,
+                      status: 'pending',
+                      deadline: taskDeadline,
+                      priority: taskPriority
+                    });
+                    addToast('Task created successfully!', 'success');
+                    setIsAddOpen(false);
+                    setTaskTitle('');
+                    setTaskDeadline('');
+                    setTaskPriority('medium');
+                    setTaskAssignee('VK');
+                  }}
                 >
                   Create Task
                 </motion.button>

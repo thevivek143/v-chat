@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Flame, Heart, MessageCircle, Share2, Bookmark, MoreVertical, Music, Check, Play, Users, UsersRound } from 'lucide-react';
-import { mockReels, mockPosts, mockLiveStreams, mockCommunities } from '../data/explore.data';
+import { useExploreStore } from '../store/explore.store';
+import type { Post } from '../data/explore.data';
 
 export default function Explore() {
   const navigate = useNavigate();
@@ -10,57 +11,85 @@ export default function Explore() {
   
   const tabs = ['For You', 'Reels', 'Videos', 'Live', 'Posts', 'Communities'];
 
+  const {
+    reels,
+    posts,
+    liveStreams,
+    communities,
+    likedReels,
+    savedPosts,
+    followedUsers,
+    joinedCommunities,
+    toggleLikeReel,
+    toggleSavePost,
+    toggleFollow,
+    toggleJoinCommunity
+  } = useExploreStore();
+
   // Helper component for repeating Text Posts
-  const TextPostCard = ({ post }: { post: any }) => (
-    <motion.div 
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="mx-4 mb-4 bg-card border-[0.5px] border-border rounded-[20px] p-4 shadow-sm"
-    >
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-[38px] h-[38px] rounded-full flex justify-center items-center" style={{ background: post.avatarGrad }}>
-            <span className="text-[12px] font-bold text-white uppercase">{post.username.substring(0,2)}</span>
+  const TextPostCard = ({ post }: { post: Post }) => {
+    const isSaved = savedPosts.includes(post.id);
+    const isFollowing = followedUsers.includes(post.username);
+    
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mx-4 mb-4 bg-card border-[0.5px] border-border rounded-[20px] p-4 shadow-sm"
+      >
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-[38px] h-[38px] rounded-full flex justify-center items-center" style={{ background: post.avatarGrad }}>
+              <span className="text-[12px] font-bold text-white uppercase">{post.username.substring(0,2)}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[14px] font-bold text-text leading-tight tracking-wide">@{post.username}</span>
+              <span className="text-[11px] font-medium text-text3 mt-0.5">{post.timeLoc}</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[14px] font-bold text-text leading-tight tracking-wide">@{post.username}</span>
-            <span className="text-[11px] font-medium text-text3 mt-0.5">{post.timeLoc}</span>
-          </div>
+          <motion.div 
+            whileTap={{ scale: 0.95 }}
+            onClick={() => toggleFollow(post.username)}
+            className="cursor-pointer"
+          >
+            {isFollowing ? (
+              <span className="bg-[rgba(16,185,129,0.15)] text-[#10B981] text-[11px] font-bold px-3 py-1.5 rounded-[12px] flex items-center gap-1"><Check size={12}/> Following</span>
+            ) : (
+              <span className="bg-[rgba(108,60,225,0.15)] text-primary-light text-[11px] font-bold px-4 py-1.5 rounded-[12px]">Follow</span>
+            )}
+          </motion.div>
         </div>
-        {post.isFollowing ? (
-          <span className="bg-[rgba(16,185,129,0.15)] text-[#10B981] text-[11px] font-bold px-3 py-1.5 rounded-[12px] flex items-center gap-1"><Check size={12}/> Following</span>
-        ) : (
-          <span className="bg-[rgba(108,60,225,0.15)] text-primary-light text-[11px] font-bold px-4 py-1.5 rounded-[12px]">Follow</span>
-        )}
-      </div>
 
-      <p className="text-[14px] text-text leading-[1.5] mb-2">{post.content}</p>
-      
-      <div className="flex flex-wrap gap-1.5 mb-4">
-        {post.hashtags.map((ht: string, i: number) => (
-          <span key={i} className="text-[12px] font-bold text-primary-light cursor-pointer hover:underline">{ht}</span>
-        ))}
-      </div>
-
-      <div className="flex items-center justify-between border-t-[0.5px] border-border pt-3">
-        <div className="flex gap-4">
-          <div className="flex items-center gap-1.5 cursor-pointer">
-            <Heart size={18} className="text-text2" />
-            <span className="text-[12px] font-semibold text-text2">{post.likes}</span>
-          </div>
-          <div className="flex items-center gap-1.5 cursor-pointer">
-            <MessageCircle size={18} className="text-text2" />
-            <span className="text-[12px] font-semibold text-text2">{post.comments}</span>
-          </div>
-          <div className="flex items-center gap-1.5 cursor-pointer">
-            <Share2 size={18} className="text-text2" />
-            <span className="text-[12px] font-semibold text-text2">24</span>
-          </div>
+        <p className="text-[14px] text-text leading-[1.5] mb-2">{post.content}</p>
+        
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {post.hashtags.map((ht: string, i: number) => (
+            <span key={i} className="text-[12px] font-bold text-primary-light cursor-pointer hover:underline">{ht}</span>
+          ))}
         </div>
-        <Bookmark size={18} className="text-text2 cursor-pointer" />
-      </div>
-    </motion.div>
-  );
+
+        <div className="flex items-center justify-between border-t-[0.5px] border-border pt-3">
+          <div className="flex gap-4">
+            <div className="flex items-center gap-1.5 cursor-pointer">
+              <Heart size={18} className="text-text2" />
+              <span className="text-[12px] font-semibold text-text2">{post.likes}</span>
+            </div>
+            <div className="flex items-center gap-1.5 cursor-pointer">
+              <MessageCircle size={18} className="text-text2" />
+              <span className="text-[12px] font-semibold text-text2">{post.comments}</span>
+            </div>
+            <div className="flex items-center gap-1.5 cursor-pointer">
+              <Share2 size={18} className="text-text2" />
+              <span className="text-[12px] font-semibold text-text2">24</span>
+            </div>
+          </div>
+          <motion.div whileTap={{ scale: 0.8 }} onClick={() => toggleSavePost(post.id)} className="cursor-pointer">
+            <Bookmark size={18} className={isSaved ? 'text-primary fill-primary' : 'text-text2'} />
+          </motion.div>
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="w-full flex-col flex bg-bg relative min-h-[100dvh]">
@@ -108,8 +137,10 @@ export default function Explore() {
               className="flex flex-col"
             >
               {/* Combine items to simulate mix feed */}
-              {mockReels.map((reel, idx) => {
-                const post = activeTab === 'For You' && idx % 2 === 1 ? mockPosts[Math.floor(idx/2)] : null;
+              {reels.map((reel, idx) => {
+                const post = activeTab === 'For You' && idx % 2 === 1 ? posts[Math.floor(idx/2)] : null;
+                const isLiked = likedReels.includes(reel.id);
+                const isFollowing = followedUsers.includes(reel.username);
                 
                 return (
                   <React.Fragment key={reel.id}>
@@ -141,7 +172,13 @@ export default function Explore() {
                             </div>
                             <div className="flex flex-col">
                               <span className="text-[13px] font-bold text-white tracking-wide">@{reel.username}</span>
-                              <span className="text-[12px] text-white/70 font-medium">· Follow</span>
+                              <motion.span 
+                                whileTap={{ scale: 0.9 }}
+                                onClick={(e) => { e.stopPropagation(); toggleFollow(reel.username); }}
+                                className="text-[12px] text-white/70 font-medium cursor-pointer hover:text-white"
+                              >
+                                {isFollowing ? '· Following' : '· Follow'}
+                              </motion.span>
                             </div>
                           </div>
                           {reel.isLive && (
@@ -151,10 +188,14 @@ export default function Explore() {
 
                         {/* Right Action Bar */}
                         <div className="absolute right-3 bottom-[60px] z-10 flex flex-col gap-5 items-center">
-                          <div className="flex flex-col items-center gap-1 opacity-90 cursor-default">
-                            <Heart size={24} className="text-white fill-transparent" />
+                          <motion.div 
+                            whileTap={{ scale: 0.8 }}
+                            onClick={(e) => { e.stopPropagation(); toggleLikeReel(reel.id); }}
+                            className="flex flex-col items-center gap-1 opacity-90 cursor-pointer"
+                          >
+                            <Heart size={24} className={isLiked ? 'text-pink fill-pink' : 'text-white fill-transparent'} />
                             <span className="text-[10px] font-bold text-white tracking-wide">{reel.likes}</span>
-                          </div>
+                          </motion.div>
                           <div className="flex flex-col items-center gap-1 opacity-90">
                             <MessageCircle size={24} className="text-white fill-transparent" />
                             <span className="text-[10px] font-bold text-white tracking-wide">{reel.comments}</span>
@@ -163,10 +204,14 @@ export default function Explore() {
                             <Share2 size={24} className="text-white" />
                             <span className="text-[10px] font-bold text-white tracking-wide">Share</span>
                           </div>
-                          <div className="flex flex-col items-center gap-1 opacity-90">
-                            <Bookmark size={24} className="text-white" />
+                          <motion.div 
+                            whileTap={{ scale: 0.8 }}
+                            onClick={(e) => { e.stopPropagation(); toggleSavePost(reel.id); }}
+                            className="flex flex-col items-center gap-1 opacity-90 cursor-pointer"
+                          >
+                            <Bookmark size={24} className={savedPosts.includes(reel.id) ? 'text-primary fill-primary' : 'text-white'} />
                             <span className="text-[10px] font-bold text-white tracking-wide">Save</span>
-                          </div>
+                          </motion.div>
                           <div className="flex flex-col items-center gap-1 opacity-90">
                             <MoreVertical size={24} className="text-white" />
                             <span className="text-[10px] font-bold text-white tracking-wide">More</span>
@@ -212,7 +257,7 @@ export default function Explore() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col mt-2"
             >
-               {mockPosts.map((post) => (
+               {posts.map((post) => (
                  <TextPostCard key={post.id} post={post} />
                ))}
             </motion.div>
@@ -224,7 +269,7 @@ export default function Explore() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col gap-4 px-4"
             >
-               {mockReels.map((reel, idx) => (
+               {reels.map((reel, idx) => (
                  <motion.div 
                    key={reel.id}
                    initial={{ opacity: 0, y: 16 }}
@@ -269,7 +314,7 @@ export default function Explore() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col gap-4 px-4"
             >
-               {mockLiveStreams.map((stream, idx) => (
+               {liveStreams.map((stream, idx) => (
                  <motion.div 
                    key={stream.id}
                    initial={{ opacity: 0, y: 16 }}
@@ -317,44 +362,48 @@ export default function Explore() {
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="flex flex-col gap-3 px-4"
             >
-               {mockCommunities.map((comm, idx) => (
-                 <motion.div 
-                   key={comm.id}
-                   initial={{ opacity: 0, scale: 0.95 }}
-                   animate={{ opacity: 1, scale: 1 }}
-                   transition={{ delay: idx * 0.05 }}
-                   className="bg-card rounded-[20px] p-4 border border-border shadow-sm flex flex-col"
-                 >
-                   <div className="flex justify-between items-start mb-3">
-                     <div className="flex items-center gap-3">
-                       <div className="w-[48px] h-[48px] rounded-[14px] bg-card2 border border-border2 flex items-center justify-center text-[24px]">
-                         {comm.icon}
-                       </div>
-                       <div className="flex flex-col">
-                         <span className="text-[15px] font-bold text-text leading-tight">{comm.name}</span>
-                         <span className="text-[12px] font-medium text-text2 mt-0.5 flex items-center gap-1">
-                           <UsersRound size={12} /> {comm.members} Members
-                         </span>
+               {communities.map((comm, idx) => {
+                 const isJoined = joinedCommunities.includes(comm.id);
+                 return (
+                   <motion.div 
+                     key={comm.id}
+                     initial={{ opacity: 0, scale: 0.95 }}
+                     animate={{ opacity: 1, scale: 1 }}
+                     transition={{ delay: idx * 0.05 }}
+                     className="bg-card rounded-[20px] p-4 border border-border shadow-sm flex flex-col"
+                   >
+                     <div className="flex justify-between items-start mb-3">
+                       <div className="flex items-center gap-3">
+                         <div className="w-[48px] h-[48px] rounded-[14px] bg-card2 border border-border2 flex items-center justify-center text-[24px]">
+                           {comm.icon}
+                         </div>
+                         <div className="flex flex-col">
+                           <span className="text-[15px] font-bold text-text leading-tight">{comm.name}</span>
+                           <span className="text-[12px] font-medium text-text2 mt-0.5 flex items-center gap-1">
+                             <UsersRound size={12} /> {comm.members} Members
+                           </span>
+                         </div>
                        </div>
                      </div>
-                   </div>
-                   
-                   <div className="bg-card2 rounded-[12px] p-3 mb-3 border border-border/50">
-                     <span className="text-[12px] font-bold text-primary-light mb-1 block">Trending Post</span>
-                     <p className="text-[13px] text-text3 italic">{comm.recentPost}</p>
-                   </div>
+                     
+                     <div className="bg-card2 rounded-[12px] p-3 mb-3 border border-border/50">
+                       <span className="text-[12px] font-bold text-primary-light mb-1 block">Trending Post</span>
+                       <p className="text-[13px] text-text3 italic">{comm.recentPost}</p>
+                     </div>
 
-                   {comm.isJoined ? (
-                     <button className="w-full bg-[rgba(16,185,129,0.12)] border-[0.5px] border-[rgba(16,185,129,0.3)] text-[#10B981] font-bold rounded-[12px] py-2.5 text-[13px] flex justify-center items-center gap-1.5">
-                       <Check size={14} /> Joined
-                     </button>
-                   ) : (
-                     <button className="w-full bg-primary text-white font-bold rounded-[12px] py-2.5 text-[13px]">
-                       Join Community
-                     </button>
-                   )}
-                 </motion.div>
-               ))}
+                     <motion.button 
+                       whileTap={{ scale: 0.98 }}
+                       onClick={() => toggleJoinCommunity(comm.id)}
+                       className={isJoined 
+                         ? "w-full bg-[rgba(16,185,129,0.12)] border-[0.5px] border-[rgba(16,185,129,0.3)] text-[#10B981] font-bold rounded-[12px] py-2.5 text-[13px] flex justify-center items-center gap-1.5"
+                         : "w-full bg-primary text-white font-bold rounded-[12px] py-2.5 text-[13px]"
+                       }
+                     >
+                       {isJoined ? <><Check size={14} /> Joined</> : 'Join Community'}
+                     </motion.button>
+                   </motion.div>
+                 );
+               })}
             </motion.div>
           )}
 

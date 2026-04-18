@@ -2,20 +2,22 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Plus, ChevronRight, X, Bot, Sparkles } from 'lucide-react';
-
-const mockEvents = [
-  { id: 1, date: 15, title: "Priya's Birthday", addedBy: "Mom", color: "var(--pink)" },
-  { id: 2, date: 18, title: "Dad's Doctor Appt", addedBy: "Dad", color: "var(--red)" },
-  { id: 3, date: 20, title: "Arjun's Results", addedBy: "Arjun", color: "var(--green)" },
-  { id: 4, date: 22, title: "Family Function", addedBy: "Mom", color: "var(--purple)" },
-  { id: 5, date: 28, title: "Goa Trip", addedBy: "Vivek", color: "var(--accent)" },
-];
+import { useFeaturesStore } from '../../store/features.store';
+import { useToastStore } from '../../store/toast.store';
 
 export default function FamilyCalendar() {
   const navigate = useNavigate();
+  const { calendarEvents, addEvent, deleteEvent } = useFeaturesStore();
+  const { addToast } = useToastStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isNegotiating, setIsNegotiating] = useState(false);
   const [negotiationResult, setNegotiationResult] = useState<string | null>(null);
+  
+  // Form state
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
+  const [eventType, setEventType] = useState('family');
 
   const startAiNegotiation = () => {
     setIsNegotiating(true);
@@ -31,7 +33,45 @@ export default function FamilyCalendar() {
   const weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const today = 12;
 
-  const getEventsForDate = (day: number) => mockEvents.filter(e => e.date === day);
+  const getEventsForDate = (day: number) => {
+    return calendarEvents.filter(e => {
+      const eventDay = parseInt(e.date.split('-')[2]);
+      return eventDay === day;
+    });
+  };
+
+  const getColorForType = (type: string) => {
+    switch (type) {
+      case 'family': return 'var(--pink)';
+      case 'medical': return 'var(--red)';
+      case 'social': return 'var(--green)';
+      default: return 'var(--accent)';
+    }
+  };
+
+  const handleAddEvent = () => {
+    if (!eventTitle || !eventDate || !eventTime) {
+      addToast('Please fill in all fields', 'warning');
+      return;
+    }
+    
+    const color = getColorForType(eventType);
+    addEvent({
+      title: eventTitle,
+      date: eventDate,
+      time: eventTime,
+      type: eventType,
+      color,
+      participants: ['You']
+    });
+    
+    addToast('Event added successfully!', 'success');
+    setIsAddOpen(false);
+    setEventTitle('');
+    setEventDate('');
+    setEventTime('');
+    setEventType('family');
+  };
 
   return (
     <div className="w-full flex-col flex bg-bg relative min-h-full">
@@ -97,7 +137,7 @@ export default function FamilyCalendar() {
         <div className="px-4">
           <h3 className="text-[13px] font-bold text-text3 uppercase tracking-wide mb-3">Events this month</h3>
           <div className="flex flex-col gap-3">
-            {mockEvents.map(ev => (
+            {calendarEvents.map(ev => (
               <motion.div 
                 key={ev.id}
                 className="bg-card border-[0.5px] border-border rounded-[16px] flex overflow-hidden shadow-sm cursor-pointer"
@@ -108,11 +148,20 @@ export default function FamilyCalendar() {
                   <div className="flex flex-col gap-1">
                     <span className="text-[14px] font-bold text-text">{ev.title}</span>
                     <div className="flex items-center gap-2 text-[11px] text-text2 font-medium">
-                      <span>Dec {ev.date}, 09:00 AM</span>
+                      <span>{new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, {ev.time}</span>
                       <span>·</span>
-                      <span>Added by {ev.addedBy}</span>
+                      <span>Type: {ev.type}</span>
                     </div>
                   </div>
+                  <button 
+                    onClick={() => {
+                      deleteEvent(ev.id);
+                      addToast('Event deleted', 'info');
+                    }}
+                    className="text-text3 hover:text-red text-[11px] font-medium px-2"
+                  >
+                    Delete
+                  </button>
                 </div>
               </motion.div>
             ))}
@@ -171,24 +220,47 @@ export default function FamilyCalendar() {
               </div>
               
               <div className="flex flex-col gap-4">
-                <input type="text" placeholder="Event Title" className="w-full bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none focus:border-primary transition-colors" />
+                <input 
+                  type="text" 
+                  placeholder="Event Title" 
+                  value={eventTitle}
+                  onChange={(e) => setEventTitle(e.target.value)}
+                  className="w-full bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none focus:border-primary transition-colors" 
+                />
                 
                 <div className="flex gap-3">
-                  <input type="date" className="flex-1 bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none" />
-                  <input type="time" className="flex-1 bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none" />
+                  <input 
+                    type="date" 
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                    className="flex-1 bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none" 
+                  />
+                  <input 
+                    type="time" 
+                    value={eventTime}
+                    onChange={(e) => setEventTime(e.target.value)}
+                    className="flex-1 bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3 text-[14px] text-text outline-none" 
+                  />
                 </div>
 
                 <div className="flex items-center justify-between bg-card2 border-[0.5px] border-border rounded-xl px-4 py-3">
-                  <span className="text-[14px] font-medium text-text">Add for everyone</span>
-                  <div className="w-10 h-6 bg-primary rounded-full relative cursor-pointer">
-                    <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
-                  </div>
+                  <span className="text-[14px] font-medium text-text">Event Type</span>
+                  <select 
+                    value={eventType}
+                    onChange={(e) => setEventType(e.target.value)}
+                    className="bg-transparent text-[14px] text-text outline-none cursor-pointer"
+                  >
+                    <option value="family">Family</option>
+                    <option value="medical">Medical</option>
+                    <option value="social">Social</option>
+                    <option value="other">Other</option>
+                  </select>
                 </div>
 
                 <motion.button 
                   className="w-full bg-primary text-white font-bold py-3.5 rounded-xl mt-2 text-[15px]"
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => setIsAddOpen(false)}
+                  onClick={handleAddEvent}
                 >
                   Save Event
                 </motion.button>

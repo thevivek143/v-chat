@@ -1,33 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, Globe, Video, Phone, PlusCircle, Image as ImageIcon, Mic, Send, Play, CheckCheck, Check, X, LayoutGrid } from 'lucide-react';
 import GroupFeatures from '../components/GroupFeatures';
-import { rahulMessages } from '../data/chatDetail.data';
+import { useChatStore } from '../store/chat.store';
 import type { DirectMessage, ContextGroup } from '../data/chat.data';
 
 export default function ChatDetail() {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [inputText, setInputText] = useState('');
   const [isFeaturesOpen, setIsFeaturesOpen] = useState(false);
   
-  const isGroup = id?.startsWith('group-');
-  const groupType = isGroup ? (id?.split('-')[1] as any) : null;
+  const chatId = id || 'rahul';
+  const isGroup = chatId?.startsWith('group-');
+  const groupType = isGroup ? (chatId?.split('-')[1] as any) : null;
   
   const routeState = location.state as (DirectMessage | ContextGroup | null);
   
-  const name = routeState ? routeState.name : 'Rahul Kumar';
-  const isOnline = routeState && 'isOnline' in routeState ? routeState.isOnline : true;
-  const avatarGradient = routeState ? routeState.gradient : 'linear-gradient(135deg, #6C3CE1, #06B6D4)';
-  const initials = routeState && 'initials' in routeState ? routeState.initials : 'RK';
-  const streaksOrEmoji = routeState && 'streak' in routeState ? routeState.streak : null;
-  const isEmoji = routeState && 'emoji' in routeState;
-  const emoji = isEmoji ? (routeState as ContextGroup).emoji : '💬';
+  // Get store data
+  const store = useChatStore();
+  const messages = store.messages[chatId] ?? [];
+  const chat = store.chats.find(c => c.id === chatId);
+  
+  // Get chat info from store or fallback to route state
+  const name = chat?.name || routeState?.name || 'Rahul Kumar';
+  const isOnline = chat?.online ?? (routeState && 'isOnline' in routeState ? routeState.isOnline : true);
+  const avatarGradient = chat?.gradient || routeState?.gradient || 'linear-gradient(135deg, #6C3CE1, #06B6D4)';
+  const initials = chat?.initials || (routeState && 'initials' in routeState ? routeState.initials : 'RK');
+  const streaksOrEmoji = chat?.streak || (routeState && 'streak' in routeState ? routeState.streak : null);
+  const isEmoji = chat?.emoji || (routeState && 'emoji' in routeState);
+  const emoji = chat?.emoji || (isEmoji ? (routeState as ContextGroup).emoji : '💬');
 
-  const messages = rahulMessages;
+  // Mark as read on mount
+  useEffect(() => {
+    store.markAsRead(chatId);
+  }, [chatId, store]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   return (
     <div className="w-full flex-col flex bg-bg relative h-full max-h-[100dvh] overflow-hidden">
@@ -172,8 +188,8 @@ export default function ChatDetail() {
                     <div className={`flex items-center justify-end gap-1 mt-0.5 ${isMe ? 'text-white/70' : 'text-text3'}`}>
                       <span className="text-[10px] leading-none font-medium">{msg.time}</span>
                       {isMe && (
-                        msg.isRead ? <CheckCheck size={12} className="text-[#22D3EE]" /> 
-                        : msg.isDelivered ? <CheckCheck size={12} /> 
+                        msg.status === 'read' ? <CheckCheck size={12} className="text-[#22D3EE]" /> 
+                        : msg.status === 'delivered' ? <CheckCheck size={12} /> 
                         : <Check size={12} />
                       )}
                     </div>
@@ -221,8 +237,8 @@ export default function ChatDetail() {
                       <div className={`flex items-center gap-1 ${isMe ? 'text-white/70' : 'text-text3'}`}>
                         <span className="text-[10px] leading-none font-medium">{msg.time}</span>
                         {isMe && (
-                          msg.isRead ? <CheckCheck size={12} className="text-[#22D3EE]" /> 
-                          : msg.isDelivered ? <CheckCheck size={12} /> 
+                          msg.status === 'read' ? <CheckCheck size={12} className="text-[#22D3EE]" /> 
+                          : msg.status === 'delivered' ? <CheckCheck size={12} /> 
                           : <Check size={12} />
                         )}
                       </div>
@@ -243,6 +259,7 @@ export default function ChatDetail() {
               </motion.div>
             );
           })}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -282,6 +299,13 @@ export default function ChatDetail() {
           <motion.div 
             className="w-[40px] h-[40px] mb-[2px] rounded-full bg-primary flex items-center justify-center cursor-pointer shrink-0 shadow-md"
             whileTap={{ scale: 0.9 }}
+            onClick={() => {
+              if (inputText.trim().length > 0) {
+                store.sendMessage(chatId, inputText.trim());
+                setInputText('');
+                store.simulateReply(chatId);
+              }
+            }}
           >
             {inputText.trim().length > 0 ? (
               <Send size={18} className="text-white ml-0.5" />

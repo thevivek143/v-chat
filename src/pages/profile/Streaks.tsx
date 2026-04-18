@@ -1,12 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, Flame, Leaf, BookOpen, HeartHandshake } from 'lucide-react';
-import { mockStreaks } from '../../data/profile.data';
+import { ChevronLeft, Leaf, BookOpen, HeartHandshake } from 'lucide-react';
+import { useProfileStore } from '../../store/profile.store';
+
+const themes = [
+  { i: '🌱', n: 'Nature' },
+  { i: '⭐', n: 'Space' },
+  { i: '🔥', n: 'Fire' },
+  { i: '💎', n: 'Crystal' },
+  { i: '🐣', n: 'Life' },
+  { i: '🏔️', n: 'Journey' }
+];
 
 export default function Streaks() {
   const navigate = useNavigate();
+  const store = useProfileStore();
   const [showPicker, setShowPicker] = useState(false);
+  const [editingStreakId, setEditingStreakId] = useState<string | null>(null);
+  const [selectedTheme, setSelectedTheme] = useState(themes[0].n);
 
   return (
     <motion.div 
@@ -64,7 +76,7 @@ export default function Streaks() {
 
         {/* All streaks */}
         <div className="flex flex-col gap-6">
-          {mockStreaks.map(streak => (
+          {store.streaks.map(streak => (
             <div key={streak.id} className="bg-card border-[0.5px] border-border rounded-[24px] p-5 shadow-sm flex flex-col relative overflow-hidden">
                {streak.status !== 'safe' && (
                  <div className="absolute top-0 right-0 bg-red text-white text-[10px] font-bold px-3 py-1 rounded-bl-[16px] animate-pulse">AT RISK</div>
@@ -94,7 +106,11 @@ export default function Streaks() {
                      <span className="text-[36px] font-bold text-text leading-none tracking-tight -mb-1">{streak.days}</span>
                      <span className="text-[12px] font-medium text-text3 ml-1">Days</span>
                   </div>
-                  <button onClick={() => setShowPicker(true)} className="border border-border2 text-text3 font-bold text-[12px] px-4 py-2 rounded-xl h-max">
+                  <button onClick={() => {
+                    setEditingStreakId(streak.id);
+                    setSelectedTheme(streak.theme);
+                    setShowPicker(true);
+                  }} className="border border-border2 text-text3 font-bold text-[12px] px-4 py-2 rounded-xl h-max">
                      Change Theme
                   </button>
                </div>
@@ -123,15 +139,12 @@ export default function Streaks() {
                <h2 className="text-[18px] font-bold text-text mb-4 text-center">Select Theme</h2>
                
                <div className="grid grid-cols-2 gap-3 mb-6">
-                 {[
-                   { i: '🌱', n: 'Nature' },
-                   { i: '⭐', n: 'Space' },
-                   { i: '🔥', n: 'Fire' },
-                   { i: '💎', n: 'Crystal' },
-                   { i: '🐣', n: 'Life' },
-                   { i: '🏔️', n: 'Journey' }
-                 ].map((t, idx) => (
-                    <div key={idx} className={`bg-card rounded-[16px] p-3 border-[1.5px] text-center cursor-pointer ${idx === 0 ? 'border-primary shadow-[0_0_15px_rgba(108,60,225,0.2)]' : 'border-border'}`}>
+                 {themes.map((t, idx) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => setSelectedTheme(t.n)}
+                      className={`bg-card rounded-[16px] p-3 border-[1.5px] text-center cursor-pointer transition-all ${selectedTheme === t.n ? 'border-primary shadow-[0_0_15px_rgba(108,60,225,0.2)]' : 'border-border hover:border-border2'}`}
+                    >
                        <span className="text-[28px] mb-1 block">{t.i}</span>
                        <span className="text-[13px] font-bold text-text">{t.n}</span>
                        <span className="text-[10px] text-text3 mt-1 block">5 stages</span>
@@ -139,7 +152,16 @@ export default function Streaks() {
                  ))}
                </div>
 
-               <button onClick={() => setShowPicker(false)} className="w-full bg-primary text-white font-bold py-4 rounded-[16px] text-[16px] shadow-lg">
+               <button 
+                 onClick={() => {
+                   if (editingStreakId) {
+                     store.updateStreakTheme(editingStreakId, selectedTheme);
+                   }
+                   setShowPicker(false);
+                   setEditingStreakId(null);
+                 }} 
+                 className="w-full bg-primary text-white font-bold py-4 rounded-[16px] text-[16px] shadow-lg"
+               >
                   Confirm Selection
                </button>
             </motion.div>

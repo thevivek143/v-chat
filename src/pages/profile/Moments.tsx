@@ -1,10 +1,30 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Lock, Search } from 'lucide-react';
+import { useProfileStore } from '../../store/profile.store';
+
+const weekTabs = ['This Week', 'This Month', '2024', 'All'];
 
 export default function Moments() {
   const navigate = useNavigate();
+  const store = useProfileStore();
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMoments = useMemo(() => {
+    let moments = store.moments;
+    
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      moments = moments.filter(m => 
+        m.title.toLowerCase().includes(query) || 
+        m.subtitle.toLowerCase().includes(query)
+      );
+    }
+    
+    return moments;
+  }, [store.moments, searchQuery]);
 
   return (
     <motion.div 
@@ -23,8 +43,14 @@ export default function Moments() {
         </div>
 
         <div className="flex gap-4 mt-2 overflow-x-auto pb-2" style={{ scrollbarWidth: 'none' }}>
-           {['This Week', 'This Month', '2024', 'All'].map((tab, i) => (
-             <span key={i} className={`text-[14px] font-bold shrink-0 pb-1 ${i === 0 ? 'text-text border-b-2 border-primary' : 'text-text3'}`}>{tab}</span>
+           {weekTabs.map((tab, i) => (
+             <span 
+               key={i} 
+               onClick={() => setSelectedTab(i)}
+               className={`text-[14px] font-bold shrink-0 pb-1 cursor-pointer transition-colors ${i === selectedTab ? 'text-text border-b-2 border-primary' : 'text-text3 hover:text-text2'}`}
+             >
+               {tab}
+             </span>
            ))}
         </div>
       </div>
@@ -60,7 +86,13 @@ export default function Moments() {
          <div className="w-full bg-card border-[0.5px] border-border rounded-[16px] px-4 py-3 flex items-center gap-3 mb-8 shadow-sm">
             <Search size={18} className="text-primary-light" />
             <div className="flex flex-col flex-1">
-               <input type="text" placeholder="Ask about your moments..." className="w-full bg-transparent border-none outline-none text-[14px] text-text mb-1" />
+               <input 
+                 type="text" 
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 placeholder="Ask about your moments..." 
+                 className="w-full bg-transparent border-none outline-none text-[14px] text-text mb-1" 
+               />
                <div className="flex gap-2 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                   <span className="shrink-0 bg-card2 border-[0.5px] border-border2 px-2 py-0.5 rounded-[6px] text-[10px] text-text3">Who did I meet at GDG?</span>
                   <span className="shrink-0 bg-card2 border-[0.5px] border-border2 px-2 py-0.5 rounded-[6px] text-[10px] text-text3">Spend on food in Nov?</span>
@@ -74,25 +106,26 @@ export default function Moments() {
          <div className="flex flex-col pl-4 relative">
             <div className="absolute left-[23px] top-0 bottom-0 w-[2px] bg-border"></div>
 
-            {[
-              { d: 'Dec 12', i: '🎪', t: 'Attended GDG Agentathon', s: 'Madhapur, Hyd' },
-              { d: 'Dec 10', i: '👥', t: 'Connected with 3 people', s: 'via Vchat Drop' },
-              { d: 'Dec 8', i: '⚡', t: 'Paid electricity bill', s: '₹1,340 via Vchat Pay' },
-              { d: 'Dec 5', i: '🎂', t: 'Wished 2 friends birthday', s: 'Priya and Arjun' },
-              { d: 'Dec 1', i: '💸', t: 'Sent ₹5,000 to Dad', s: 'Monthly transfer' }
-            ].map((ev, i) => (
-               <div key={i} className="flex gap-6 mb-6 relative">
-                 <div className="w-[18px] h-[18px] rounded-full bg-primary border-[4px] border-bg z-10 shrink-0 mt-0.5 relative -left-[1px]"></div>
-                 <div className="flex flex-col flex-1 bg-card border-[0.5px] border-border rounded-[16px] p-4 shadow-sm -mt-2">
+            {filteredMoments.length === 0 ? (
+              <div className="text-center py-8 text-text3">
+                <span className="text-[32px] block mb-2">🔍</span>
+                <p className="text-[14px]">No moments found</p>
+              </div>
+            ) : (
+              filteredMoments.map((moment) => (
+                <div key={moment.id} className="flex gap-6 mb-6 relative">
+                  <div className="w-[18px] h-[18px] rounded-full bg-primary border-[4px] border-bg z-10 shrink-0 mt-0.5 relative -left-[1px]"></div>
+                  <div className="flex flex-col flex-1 bg-card border-[0.5px] border-border rounded-[16px] p-4 shadow-sm -mt-2">
                     <div className="flex justify-between items-center mb-2">
-                       <span className="text-[11px] font-bold text-text3 uppercase tracking-wider">{ev.d}</span>
-                       <span className="text-[18px]">{ev.i}</span>
+                      <span className="text-[11px] font-bold text-text3 uppercase tracking-wider">{moment.date}</span>
+                      <span className="text-[18px]">{moment.icon}</span>
                     </div>
-                    <span className="text-[14px] font-bold text-text mb-1">{ev.t}</span>
-                    <span className="text-[12px] font-medium text-text2">{ev.s}</span>
-                 </div>
-               </div>
-            ))}
+                    <span className="text-[14px] font-bold text-text mb-1">{moment.title}</span>
+                    <span className="text-[12px] font-medium text-text2">{moment.subtitle}</span>
+                  </div>
+                </div>
+              ))
+            )}
          </div>
       </div>
     </motion.div>

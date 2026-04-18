@@ -1,11 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Sparkles, MapPin, Briefcase } from 'lucide-react';
-import { mockJobs } from '../../data/hub.data';
+import { ChevronLeft, Sparkles, MapPin, Briefcase, Bookmark } from 'lucide-react';
+import { useHubStore } from '../../store/hub.store';
+import { useToastStore } from '../../store/toast.store';
 
 export default function Jobs() {
   const navigate = useNavigate();
+  const store = useHubStore();
+  const toast = useToastStore();
+  const [activeTab, setActiveTab] = useState('All');
 
   return (
     <motion.div 
@@ -40,16 +44,38 @@ export default function Jobs() {
         {/* Filter Row */}
         <div className="flex gap-2 overflow-x-auto pb-4 mb-2" style={{ scrollbarWidth: 'none' }}>
            {['All', 'Remote', 'Full-time', 'Internship', 'Fresher'].map((filter, i) => (
-             <div key={i} className={`border-[0.5px] rounded-full px-4 py-1.5 shrink-0 flex items-center shadow-sm ${i === 0 ? 'bg-primary border-primary text-white' : 'bg-card border-border text-text'}`}>
-               <span className="text-[12px] font-bold">{filter}</span>
-             </div>
+             <motion.div 
+               key={i} 
+               whileTap={{ scale: 0.95 }}
+               onClick={() => setActiveTab(filter)}
+               className={`border-[0.5px] rounded-full px-4 py-1.5 shrink-0 flex items-center shadow-sm cursor-pointer ${activeTab === filter ? 'bg-primary border-primary text-white' : 'bg-card border-border text-text'}`}
+             >
+               <span className={`text-[12px] font-bold ${activeTab === filter ? 'text-white' : 'text-text'}`}>{filter}</span>
+             </motion.div>
            ))}
         </div>
 
         {/* Job Cards */}
         <div className="flex flex-col gap-4">
-          {mockJobs.map((job) => (
+          {store.jobs
+            .filter(job => activeTab === 'All' || job.type.toLowerCase().includes(activeTab.toLowerCase()))
+            .map((job) => (
             <div key={job.id} className="bg-card border-[0.5px] border-border rounded-[20px] p-4 shadow-sm relative overflow-hidden">
+               {/* Bookmark button */}
+               <motion.div 
+                 whileTap={{ scale: 0.9 }}
+                 onClick={() => {
+                   store.toggleSaveJob(job.id);
+                   const isSaved = store.savedJobs.includes(job.id);
+                   toast.addToast(isSaved ? 'Removed from saved jobs' : 'Job saved!', 'success');
+                 }}
+                 className="absolute top-4 right-4 z-10 cursor-pointer"
+               >
+                 <Bookmark 
+                   size={20} 
+                   className={store.savedJobs.includes(job.id) ? 'text-primary fill-primary' : 'text-text3'} 
+                 />
+               </motion.div>
                <div className="absolute top-4 right-4 bg-[rgba(16,185,129,0.15)] text-[#10B981] border-[0.5px] border-[rgba(16,185,129,0.3)] px-2 py-1 rounded-[8px] text-[10px] font-bold flex items-center gap-1">
                   <Sparkles size={10} /> AI Match: {job.matchScore}%
                </div>
@@ -81,7 +107,20 @@ export default function Jobs() {
                   <span className="text-[14px] font-bold text-text">{job.salary}</span>
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] font-medium text-text3">{job.posted}</span>
-                    <button className="bg-primary text-white text-[12px] font-bold px-5 py-2 rounded-xl">Apply</button>
+                    {store.appliedJobs.includes(job.id) ? (
+                      <span className="bg-[rgba(16,185,129,0.15)] text-[#10B981] text-[12px] font-bold px-5 py-2 rounded-xl border border-[rgba(16,185,129,0.3)]">Applied</span>
+                    ) : (
+                      <motion.button 
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => {
+                          store.applyJob(job.id);
+                          toast.addToast('Application submitted successfully!', 'success');
+                        }}
+                        className="bg-primary text-white text-[12px] font-bold px-5 py-2 rounded-xl"
+                      >
+                        Apply
+                      </motion.button>
+                    )}
                   </div>
                </div>
             </div>
